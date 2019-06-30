@@ -13,7 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.github.clans.fab.FloatingActionButton;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -45,7 +45,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    com.github.clans.fab.FloatingActionButton addEventBtn;
+    FloatingActionButton addEventBtn;
 
     MapboxMap mapboxMap;
     MapView mapView;
@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapView.getMapAsync(this);
 
         // Initialize addEventBtn to load the add event page
-        addEventBtn = findViewById(R.id.menu_item);
+        addEventBtn = findViewById(R.id.addEventBtn);
         addEventBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -102,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(@NonNull final MapboxMap mapboxMap) {
         this.mapboxMap = mapboxMap;
-        mapboxMap.setStyle(Style.DARK, new Style.OnStyleLoaded() {
+        mapboxMap.setStyle(new Style.Builder().fromUri("mapbox://styles/samaritans/cjxcp0y0s01lg1cnwh18eid9q"), new Style.OnStyleLoaded() {
             @Override
             public void onStyleLoaded(@NonNull Style style) {
                 // moves map center to show current phone location
@@ -126,10 +126,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 symbolManager.addClickListener(new OnSymbolClickListener() {
                     @Override
                     public void onAnnotationClick(Symbol symbol) {
-                        Toast.makeText(getApplicationContext(), "clicked  " + symbol.getTextField().toLowerCase().toString(), Toast.LENGTH_SHORT).show();
-                        Log.i("DING", "DEBUG");
+                        Toast.makeText(getApplicationContext(), "Loading" , Toast.LENGTH_SHORT).show();
                         for (int i = 0; i < eventsList.size(); i++) {
-                            if (symbol.getTextField() == eventsList.get(i).getEventName()) {
+                            if (symbol.getTextJustify().equals(eventsList.get(i).getUniqueID())) {
                                 Log.i(eventsList.get(i).getEventName(), "DEBUG");
                                 openInfoActivity(eventsList.get(i));
                                 break;
@@ -142,18 +141,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mSymbolManager = symbolManager;
 
                 // Load Resources
-                Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_beef_burger_64);
-                mapboxMap.getStyle().addImage("my-marker", bm);
+                Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_italian_pizza_64);
+                mapboxMap.getStyle().addImage("food-marker", bm);
+                bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_party_balloons_64);
+                mapboxMap.getStyle().addImage("entertainment-marker", bm);
             }
         });
-
-    }
-
-    private SymbolOptions toSymbol(Event event) {
-        return new SymbolOptions()
-                .withLatLng(event.getEventLatLng())
-                .withTextField(event.getEventName())
-                .withIconImage("my-marker");
     }
 
     private void newEvent(Event event) {
@@ -177,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             clearSymbols(mSymbolManager);
             ArrayList<SymbolOptions> symbolOptionsList = new ArrayList<>();
             for (int i = 0; i < eventsList.size(); i++) {
-                symbolOptionsList.add(toSymbol(eventsList.get(i)));
+                symbolOptionsList.add(eventsList.get(i).toSymbol());
             }
             currentSymbols = mSymbolManager.create(symbolOptionsList);
         }
@@ -238,6 +231,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .build();
             locationComponent = mapboxMap.getLocationComponent();
             locationComponent.activateLocationComponent(activationOptions);
+            locationComponent.setLocationComponentEnabled(true);
             locationComponent.setCameraMode(CameraMode.TRACKING);
             locationComponent.setRenderMode(RenderMode.COMPASS);
 

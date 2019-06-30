@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
 
 import java.util.UUID;
 
@@ -13,19 +14,22 @@ public class Event implements Parcelable {
     private String eventName;
     private String eventDesc;
     private String uniqueID;
+    private String eventType;
 
-    public Event(double lat, double lang, String eventName, String eventDesc) {
+    public Event(double lat, double lang, String eventName, String eventDesc, String eventType) {
         this.eventLatLng = new LatLng(lat, lang);
         this.eventName = eventName;
         this.eventDesc = eventDesc;
         this.uniqueID = UUID.randomUUID().toString();
+        this.eventType = eventType;
     }
 
-    public Event(LatLng latLng, String eventName, String eventDesc) {
+    public Event(LatLng latLng, String eventName, String eventDesc, String eventType) {
         this.eventLatLng = latLng;
         this.eventName = eventName;
         this.eventDesc = eventDesc;
         this.uniqueID = UUID.randomUUID().toString();
+        this.eventType = eventType;
     }
 
     private Event(Parcel in) {
@@ -33,6 +37,7 @@ public class Event implements Parcelable {
         this.eventName = in.readString();
         this.eventDesc = in.readString();
         this.uniqueID = in.readString();
+        this.eventType = in.readString();
     }
 
     // Default constructor required for calls to DataSnapshot.getValue(Event.class)
@@ -55,6 +60,10 @@ public class Event implements Parcelable {
         this.uniqueID = uniqueID;
     }
 
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
+    }
+
     // Getters
     public LatLng getEventLatLng() {
         return eventLatLng;
@@ -72,6 +81,10 @@ public class Event implements Parcelable {
         return eventDesc;
     }
 
+    public String getEventType() {
+        return eventType;
+    }
+
     // Parcelable Implementation
     @Override
     public int describeContents() {
@@ -84,6 +97,7 @@ public class Event implements Parcelable {
         parcel.writeString(eventName);
         parcel.writeString(eventDesc);
         parcel.writeString(uniqueID);
+        parcel.writeString(eventType);
     }
 
     // Parcelables CREATOR that implements these two methods
@@ -97,5 +111,19 @@ public class Event implements Parcelable {
         }
     };
 
-
+    public SymbolOptions toSymbol() {
+        String iconImage = null;
+        switch(eventType) {
+            case "Food":
+                iconImage = "food-marker";
+                break;
+            case "Entertainment":
+                iconImage = "entertainment-marker";
+                break;
+        }
+        return new SymbolOptions()
+                .withLatLng(getEventLatLng())
+                .withTextJustify(getUniqueID())
+                .withIconImage(iconImage);
+    }
 }

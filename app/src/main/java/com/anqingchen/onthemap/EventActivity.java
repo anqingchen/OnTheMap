@@ -9,10 +9,11 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.firebase.database.DatabaseError;
@@ -20,15 +21,19 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
+import java.io.NotActiveException;
 import java.util.List;
 
 
 public class EventActivity extends AppCompatActivity {
 
-    EditText name, desc, lang, lat, addr;
+    EditText name, desc, addr;
     Button doBtn;
     private DatabaseReference mDatabase;
+    Spinner typeSpinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,11 +41,14 @@ public class EventActivity extends AppCompatActivity {
         setContentView(R.layout.activity_event);
         name = findViewById(R.id.editText);
         desc = findViewById(R.id.editText2);
-        lang = findViewById(R.id.editText3);
-        lat = findViewById(R.id.editText4);
         addr = findViewById(R.id.editText7);
         doBtn = findViewById(R.id.button);
         mDatabase = FirebaseDatabase.getInstance().getReference();
+
+        typeSpinner = findViewById(R.id.spinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.type_options_array, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        typeSpinner.setAdapter(adapter);
 
         final Location cLocation = getIntent().getParcelableExtra("EXTRA_LOC");
 
@@ -49,18 +57,18 @@ public class EventActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // Check for form completion
-                if(name.getText().toString().isEmpty() || desc.getText().toString().isEmpty() || lat.getText().toString().isEmpty() || lang.getText().toString().isEmpty()) {
+                if(name.getText().toString().isEmpty() || desc.getText().toString().isEmpty() || addr.getText().toString().isEmpty()) {
                     Toast.makeText(EventActivity.this, "NOT ENOUGH INFO", Toast.LENGTH_SHORT).show();
                 } else {
                     Event newEvent;
                     String address = addr.getText().toString();
+                    String eventType = typeSpinner.getSelectedItem().toString();
                     if(!address.equals("Current Location")) {
                         LatLng tempLatLng = getLocationFromAddress(getApplicationContext(), address);
-                        newEvent = new Event(tempLatLng, name.getText().toString(), desc.getText().toString());
+                        newEvent = new Event(tempLatLng, name.getText().toString(), desc.getText().toString(), eventType);
                     } else {
-                        newEvent = new Event(cLocation.getLatitude(), cLocation.getLongitude(), name.getText().toString(), desc.getText().toString());
+                        newEvent = new Event(cLocation.getLatitude(), cLocation.getLongitude(), name.getText().toString(), desc.getText().toString(), eventType);
                     }
-                    Log.i(newEvent.getEventLatLng().toString(), "DEBUG");
                     writeNewEvent(newEvent);
                 }
             }
@@ -75,7 +83,7 @@ public class EventActivity extends AppCompatActivity {
                 if(databaseError != null) {
                     Toast.makeText(EventActivity.this, "Your Event Failed To Be Added, Error Msg: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(EventActivity.this, "Your Event" + newEvent.getEventName() + "Has Been Successfully Added", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EventActivity.this, "Your Event " + newEvent.getEventName() + " Has Been Successfully Added", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }

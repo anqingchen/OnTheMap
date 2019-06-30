@@ -15,21 +15,9 @@
         mapbox:mapbox_cameraTargetLat="40.73581"
         mapbox:mapbox_cameraTargetLng="-73.99155"
         mapbox:mapbox_cameraZoom="14"
-        tools:layout_editor_absoluteX="-261dp"
-        tools:layout_editor_absoluteY="495dp" />
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="-56dp" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/locationButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="656dp"
-        android:layout_marginEnd="336dp"
-        android:clickable="true"
-        android:focusable="true"
-        app:backgroundTint="#2BB8F7"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_mylocation" />
 
     <com.github.clans.fab.FloatingActionMenu
         android:id="@+id/menu"
@@ -44,44 +32,35 @@
         fab:menu_animationDelayPerItem="50"
         fab:menu_backgroundColor="@android:color/transparent"
         fab:menu_buttonSpacing="0dp"
-        fab:menu_colorNormal="#DA4336"
-        fab:menu_colorPressed="#E75043"
+        fab:menu_colorNormal="#ff6b6b"
+        fab:menu_colorPressed="#ee5253"
         fab:menu_colorRipple="#99FFFFFF"
-        fab:menu_fab_label="Options Menu"
+        fab:menu_fab_label="Close Menu"
         fab:menu_fab_size="normal"
         fab:menu_icon="@drawable/fab_add"
         fab:menu_labels_colorNormal="#333333"
         fab:menu_labels_colorPressed="#444444"
         fab:menu_labels_colorRipple="#66FFFFFF"
-        fab:menu_labels_cornerRadius="3dp"
-        fab:menu_labels_ellipsize="none"
-        fab:menu_labels_hideAnimation="@anim/fab_slide_out_to_right"
-        fab:menu_labels_margin="0dp"
-        fab:menu_labels_maxLines="-1"
-        fab:menu_labels_padding="8dp"
-        fab:menu_labels_paddingBottom="4dp"
-        fab:menu_labels_paddingLeft="8dp"
-        fab:menu_labels_paddingRight="8dp"
-        fab:menu_labels_paddingTop="4dp"
-        fab:menu_labels_position="left"
-        fab:menu_labels_showAnimation="@anim/fab_slide_in_from_right"
-        fab:menu_labels_showShadow="true"
-        fab:menu_labels_singleLine="false"
-        fab:menu_labels_textColor="#FFFFFF"
-        fab:menu_labels_textSize="14sp"
-        fab:menu_openDirection="up"
-        fab:menu_shadowColor="#66000000"
-        fab:menu_shadowRadius="4dp"
-        fab:menu_shadowXOffset="1dp"
-        fab:menu_shadowYOffset="3dp"
-        fab:menu_showShadow="true">
+        fab:menu_labels_cornerRadius="3dp">
 
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/menu_item"
+            android:id="@+id/addEventBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/star_on"
+            android:src="@android:drawable/ic_menu_add"
+            app:fab_colorNormal="@color/colorPrimary"
+            app:fab_colorPressed="@color/colorPrimaryDark"
             fab:fab_label="Add New Event"
+            fab:fab_size="mini" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/locationButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_mylocation"
+            app:fab_colorNormal="#779ecb"
+            app:fab_colorPressed="#4274ad"
+            fab:fab_label="My Location"
             fab:fab_size="mini" />
 
     </com.github.clans.fab.FloatingActionMenu>

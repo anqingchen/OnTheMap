@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">onthemap</string>
+    <string-array name="type_options_array">
+        <item>Food</item>
+        <item>Entertainment</item>
+    </string-array>
 </resources>
