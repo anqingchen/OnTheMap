@@ -1,8 +1,11 @@
 package com.anqingchen.onthemap;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,15 +13,18 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.Filter;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
@@ -41,20 +47,24 @@ import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
 import com.mapbox.mapboxsdk.style.layers.Property;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    FloatingActionButton addEventBtn;
+    FloatingActionButton addEventBtn, filterButton;
 
     MapboxMap mapboxMap;
     MapView mapView;
     ArrayList<Event> eventsList = new ArrayList<>();
+    ArrayList<Event> filteredList = new ArrayList<>();
     List<Symbol> currentSymbols = new ArrayList<>();
     LocationManager mLocationManager;
     SymbolManager mSymbolManager;
+    HashMap<String, Boolean> filterOptions = new HashMap<>();
 
-    ValueEventListener postListener;
+    ChildEventListener eventListener;
     DatabaseReference mDatabase;
 
     @Override
@@ -63,6 +73,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Load Mapbox Map with my API key
         Mapbox.getInstance(this, "pk.eyJ1Ijoic2FtYXJpdGFucyIsImEiOiJjanhjaHN6OXowM2twM3dvY3k1Z2k2bWQzIn0.qNMnSU_p4akStUv8Z8uQ6w");
         setContentView(R.layout.activity_main);
+
+        Toolbar myToolbar = findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
+
+        filterOptions.put("FOOD", true);
+        filterOptions.put("ENTERTAINMENT", true);
 
         // Initialize the map
         mapView = findViewById(R.id.mapView);
@@ -79,24 +95,50 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
+        filterButton = findViewById(R.id.filterButton);
+        filterButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openFilterActivity();
+            }
+        });
+
         // Initialize Firebase Database to update list of events
         mDatabase = FirebaseDatabase.getInstance().getReference().child("events");
-        postListener = new ValueEventListener() {
+        eventListener = new ChildEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Log.i("DATA CHANGE TRIGGERED", "DEBUG");
-                for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
-                    Event event = childSnapshot.getValue(Event.class);
-                    newEvent(event);
-                }
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                Toast.makeText(MainActivity.this, "NEW CHILD", Toast.LENGTH_SHORT).show();
+                Event event = dataSnapshot.getValue(Event.class);
+                addEvent(event);
+                filterSymbols();
                 repopulateSymbols();
             }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+                Event event = dataSnapshot.getValue(Event.class);
+                removeEvent(event.getUniqueID());
+                filterSymbols();
+                repopulateSymbols();
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
         };
-        mDatabase.addValueEventListener(postListener);
+        mDatabase.addChildEventListener(eventListener);
     }
 
     @Override
@@ -149,14 +191,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void newEvent(Event event) {
+    private void addEvent(Event event) {
         eventsList.add(event);
+        Log.i("DEBUG ADD", event.getEventName());
     }
 
 
-    private boolean removeEvent(String eventName) {
+    private boolean removeEvent(String uniqueID) {
         for (int i = 0; i < eventsList.size(); i++) {
-            if (eventName.equals(eventsList.get(i).getEventName())) {
+            if (uniqueID.equals(eventsList.get(i).getUniqueID())) {
                 eventsList.remove(i);
                 return true;
             }
@@ -167,18 +210,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     // Refresh the symbol layer with eventsList
     private void repopulateSymbols() {
         if(mSymbolManager != null) {
-            clearSymbols(mSymbolManager);
+            clearSymbols();
             ArrayList<SymbolOptions> symbolOptionsList = new ArrayList<>();
-            for (int i = 0; i < eventsList.size(); i++) {
-                symbolOptionsList.add(eventsList.get(i).toSymbol());
+            Log.i("DEBUG S", String.valueOf(filteredList.size()));
+            for (int i = 0; i < filteredList.size(); i++) {
+                symbolOptionsList.add(filteredList.get(i).toSymbol());
             }
             currentSymbols = mSymbolManager.create(symbolOptionsList);
         }
     }
 
+    private void filterSymbols () {
+        filteredList.clear();
+        ArrayList<String> filters = new ArrayList<>();
+        for(Map.Entry<String, Boolean> entry : filterOptions.entrySet()) {
+            if(entry.getValue()) {
+                filters.add(entry.getKey());
+            }
+        }
+        for(Event event : eventsList) {
+            if(filters.contains(event.getEventType())) {
+                filteredList.add(event);
+            }
+        }
+    }
+
     // Remove all current symbols from map (preserves the list);
-    private void clearSymbols(SymbolManager symbolManager) {
-        symbolManager.delete(currentSymbols);
+    private void clearSymbols() {
+        mSymbolManager.delete(currentSymbols);
     }
 
     @Override
@@ -283,4 +342,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         startActivity(intent);
     }
 
+    public void openFilterActivity() {
+        Intent intent = new Intent(this, FilterActivity.class);
+        intent.putExtra("EXTRA_OPTIONS", filterOptions);
+        startActivityForResult(intent, 100, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 100) {
+            if (resultCode == RESULT_OK) {
+                filterOptions = (HashMap<String, Boolean>) data.getSerializableExtra("sortBy");
+                Log.i("DEBUG RESULT", filterOptions.toString());
+                filterSymbols();
+                repopulateSymbols();
+            } else {
+                Log.d("DEBUG", "onActivityResult: canceled");
+            }
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_action, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        repopulateSymbols();
+        return true;
+    }
 }

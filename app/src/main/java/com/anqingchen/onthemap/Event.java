@@ -2,6 +2,7 @@ package com.anqingchen.onthemap;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
@@ -21,7 +22,7 @@ public class Event implements Parcelable {
         this.eventName = eventName;
         this.eventDesc = eventDesc;
         this.uniqueID = UUID.randomUUID().toString();
-        this.eventType = eventType;
+        this.eventType = eventType.toUpperCase();
     }
 
     public Event(LatLng latLng, String eventName, String eventDesc, String eventType) {
@@ -29,7 +30,7 @@ public class Event implements Parcelable {
         this.eventName = eventName;
         this.eventDesc = eventDesc;
         this.uniqueID = UUID.randomUUID().toString();
-        this.eventType = eventType;
+        this.eventType = eventType.toUpperCase();
     }
 
     private Event(Parcel in) {
@@ -37,7 +38,7 @@ public class Event implements Parcelable {
         this.eventName = in.readString();
         this.eventDesc = in.readString();
         this.uniqueID = in.readString();
-        this.eventType = in.readString();
+        this.eventType = in.readString().toUpperCase();
     }
 
     // Default constructor required for calls to DataSnapshot.getValue(Event.class)
@@ -61,7 +62,7 @@ public class Event implements Parcelable {
     }
 
     public void setEventType(String eventType) {
-        this.eventType = eventType;
+        this.eventType = eventType.toUpperCase();
     }
 
     // Getters
@@ -112,12 +113,13 @@ public class Event implements Parcelable {
     };
 
     public SymbolOptions toSymbol() {
+        Log.i("DEBUG SYMBOL", "IVE BEEN CALLED");
         String iconImage = null;
         switch(eventType) {
-            case "Food":
+            case "FOOD":
                 iconImage = "food-marker";
                 break;
-            case "Entertainment":
+            case "ENTERTAINMENT":
                 iconImage = "entertainment-marker";
                 break;
         }
