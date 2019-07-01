@@ -21,10 +21,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
-import java.io.NotActiveException;
 import java.util.List;
 
 

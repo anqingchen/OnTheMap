@@ -6,12 +6,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.app.ActivityOptions;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -60,12 +62,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     ArrayList<Event> eventsList = new ArrayList<>();
     ArrayList<Event> filteredList = new ArrayList<>();
     List<Symbol> currentSymbols = new ArrayList<>();
+    Symbol userSymbol;
     LocationManager mLocationManager;
     SymbolManager mSymbolManager;
     HashMap<String, Boolean> filterOptions = new HashMap<>();
 
     ChildEventListener eventListener;
     DatabaseReference mDatabase;
+
+    Vibrator vibrator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +81,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Toolbar myToolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 
         filterOptions.put("FOOD", true);
         filterOptions.put("ENTERTAINMENT", true);
@@ -90,7 +98,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         addEventBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "CLICKED ME", Toast.LENGTH_SHORT).show();
                 openEventActivity(getLastKnownLocation());
             }
         });
@@ -123,7 +130,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
                 Event event = dataSnapshot.getValue(Event.class);
-                removeEvent(event.getUniqueID());
+                if(!removeEvent(event.getUniqueID())) {
+                    Log.i("DEBUG", "Event " + event.getEventName() + " with event ID: "
+                    + event.getUniqueID() + " Does NOT exist");
+                }
                 filterSymbols();
                 repopulateSymbols();
             }
@@ -187,6 +197,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mapboxMap.getStyle().addImage("food-marker", bm);
                 bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_party_balloons_64);
                 mapboxMap.getStyle().addImage("entertainment-marker", bm);
+                bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_place_marker_64);
+                mapboxMap.getStyle().addImage("user-marker", bm);
+            }
+        });
+
+        // Long-click marker pop-up
+        mapboxMap.addOnMapLongClickListener(new MapboxMap.OnMapLongClickListener() {
+            @Override
+            public boolean onMapLongClick(@NonNull LatLng point) {
+                vibrator.vibrate(100);
+                if(userSymbol != null) {
+                    mSymbolManager.delete(userSymbol);
+                }
+                SymbolOptions symbolOptions = new SymbolOptions()
+                        .withLatLng(point)
+                        .withIconImage("user-marker");
+                userSymbol = mSymbolManager.create(symbolOptions);
+                return true;
+            }
+        });
+
+        // Remove user-marker on short click
+        mapboxMap.addOnMapClickListener(new MapboxMap.OnMapClickListener() {
+            @Override
+            public boolean onMapClick(@NonNull LatLng point) {
+                if(userSymbol != null) {
+                    mSymbolManager.delete(userSymbol);
+                }
+                return true;
             }
         });
     }
@@ -207,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return false;
     }
 
-    // Refresh the symbol layer with eventsList
+    // Refresh the symbol layer with filteredList
     private void repopulateSymbols() {
         if(mSymbolManager != null) {
             clearSymbols();
@@ -220,6 +259,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    // Filter the eventsList according to user selection, default include all
     private void filterSymbols () {
         filteredList.clear();
         ArrayList<String> filters = new ArrayList<>();
@@ -350,6 +390,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Get result filterOptions HashMap back
         if (requestCode == 100) {
             if (resultCode == RESULT_OK) {
                 filterOptions = (HashMap<String, Boolean>) data.getSerializableExtra("sortBy");
@@ -369,8 +410,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        repopulateSymbols();
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getItemId() == R.id.refreshBtn) {
+            repopulateSymbols();
+        }
         return true;
     }
 }

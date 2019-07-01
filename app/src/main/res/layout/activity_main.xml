@@ -33,6 +33,30 @@
             mapbox:mapbox_cameraZoom="14"
             tools:layout_editor_absoluteX="-2dp" />
 
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="5dp"
+            android:padding="10dp"
+            android:outlineProvider="none"
+            android:src="@drawable/baselinemap"
+            android:translationZ="5dp" />
+
+        <TextView
+            android:id="@+id/textView5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:outlineProvider="none"
+            android:text="On The Map"
+            android:layout_toEndOf="@id/imageView"
+            android:layout_marginTop ="14dp"
+            android:layout_marginStart="5dp"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:translationZ="5dp" />
+
     </RelativeLayout>
 
     <com.github.clans.fab.FloatingActionMenu
@@ -84,8 +108,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/baselinefilter_list"
-            app:fab_colorNormal="#779ecb"
-            app:fab_colorPressed="#4274ad"
+            app:fab_colorNormal="#f06292"
+            app:fab_colorPressed="#ba2d65"
             fab:fab_label="Filter Events"
             fab:fab_size="mini" />
 
