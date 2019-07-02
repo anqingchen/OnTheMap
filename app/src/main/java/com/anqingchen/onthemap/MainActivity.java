@@ -17,11 +17,10 @@ import android.os.Vibrator;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Filter;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -42,7 +41,6 @@ import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
-import com.mapbox.mapboxsdk.plugins.annotation.OnSymbolClickListener;
 import com.mapbox.mapboxsdk.plugins.annotation.Symbol;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolManager;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
@@ -95,27 +93,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         // Initialize addEventBtn to load the add event page
         addEventBtn = findViewById(R.id.addEventBtn);
-        addEventBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openEventActivity(getLastKnownLocation());
-            }
-        });
+        addEventBtn.setOnClickListener(v -> openEventActivity(getLastKnownLocation()));
 
         filterButton = findViewById(R.id.filterButton);
-        filterButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openFilterActivity();
-            }
-        });
+        filterButton.setOnClickListener(v -> openFilterActivity());
 
         // Initialize Firebase Database to update list of events
         mDatabase = FirebaseDatabase.getInstance().getReference().child("events");
         eventListener = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                Toast.makeText(MainActivity.this, "NEW CHILD", Toast.LENGTH_SHORT).show();
                 Event event = dataSnapshot.getValue(Event.class);
                 addEvent(event);
                 filterSymbols();
@@ -124,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
+                Event event = dataSnapshot.getValue(Event.class);
             }
 
             @Override
@@ -154,80 +141,63 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(@NonNull final MapboxMap mapboxMap) {
         this.mapboxMap = mapboxMap;
-        mapboxMap.setStyle(new Style.Builder().fromUri("mapbox://styles/samaritans/cjxcp0y0s01lg1cnwh18eid9q"), new Style.OnStyleLoaded() {
-            @Override
-            public void onStyleLoaded(@NonNull Style style) {
-                // moves map center to show current phone location
-                enableLocationComponent(style);
-                FloatingActionButton locationButton = findViewById(R.id.locationButton);
-                locationButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(getApplicationContext(),"Showing Current Location", Toast.LENGTH_SHORT).show();
-                        if(getLastKnownLocation() != null) {
-                            mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                                    new LatLng(getLastKnownLocation().getLatitude(), getLastKnownLocation().getLongitude()), 14));
-                        }
+        mapboxMap.setStyle(new Style.Builder().fromUri("mapbox://styles/samaritans/cjxcp0y0s01lg1cnwh18eid9q"), style -> {
+            // moves map center to show current phone location
+            enableLocationComponent(style);
+            FloatingActionButton locationButton = findViewById(R.id.locationButton);
+            locationButton.setOnClickListener(v -> {
+                Toast.makeText(getApplicationContext(),"Showing Current Location", Toast.LENGTH_SHORT).show();
+                if(getLastKnownLocation() != null) {
+                    mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                            new LatLng(getLastKnownLocation().getLatitude(), getLastKnownLocation().getLongitude()), 14));
+                }
+            });
+
+            // Create SymbolManager layer to draw markers
+            SymbolManager symbolManager = new SymbolManager(mapView, mapboxMap, style);
+
+            // Set OnClickListener for individual markers
+            symbolManager.addClickListener(symbol -> {
+                Toast.makeText(MainActivity.this, "Loading" , Toast.LENGTH_SHORT).show();
+                for (int i = 0; i < filteredList.size(); i++) {
+                    if (symbol.getTextJustify().equals(filteredList.get(i).getUniqueID())) {
+                        openInfoActivity(filteredList.get(i));
+                        break;
                     }
-                });
+                }
+            });
+            symbolManager.setIconAllowOverlap(true);
+            symbolManager.setIconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_VIEWPORT);
+            mSymbolManager = symbolManager;
 
-                // Create SymbolManager layer to draw markers
-                SymbolManager symbolManager = new SymbolManager(mapView, mapboxMap, style);
-
-                // Set OnClickListener for individual markers
-                symbolManager.addClickListener(new OnSymbolClickListener() {
-                    @Override
-                    public void onAnnotationClick(Symbol symbol) {
-                        Toast.makeText(getApplicationContext(), "Loading" , Toast.LENGTH_SHORT).show();
-                        for (int i = 0; i < eventsList.size(); i++) {
-                            if (symbol.getTextJustify().equals(eventsList.get(i).getUniqueID())) {
-                                Log.i(eventsList.get(i).getEventName(), "DEBUG");
-                                openInfoActivity(eventsList.get(i));
-                                break;
-                            }
-                        }
-                    }
-                });
-                symbolManager.setIconAllowOverlap(true);
-                symbolManager.setIconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_VIEWPORT);
-                mSymbolManager = symbolManager;
-
-                // Load Resources
-                Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_italian_pizza_64);
-                mapboxMap.getStyle().addImage("food-marker", bm);
-                bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_party_balloons_64);
-                mapboxMap.getStyle().addImage("entertainment-marker", bm);
-                bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_place_marker_64);
-                mapboxMap.getStyle().addImage("user-marker", bm);
-            }
+            // Load Resources
+            Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_italian_pizza_64);
+            mapboxMap.getStyle().addImage("food-marker", bm);
+            bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_party_balloons_64);
+            mapboxMap.getStyle().addImage("entertainment-marker", bm);
+            bm = BitmapFactory.decodeResource(getResources(), R.drawable.icons8_place_marker_64);
+            mapboxMap.getStyle().addImage("user-marker", bm);
         });
 
         // Long-click marker pop-up
-        mapboxMap.addOnMapLongClickListener(new MapboxMap.OnMapLongClickListener() {
-            @Override
-            public boolean onMapLongClick(@NonNull LatLng point) {
-                vibrator.vibrate(100);
-                if(userSymbol != null) {
-                    mSymbolManager.delete(userSymbol);
-                }
-                SymbolOptions symbolOptions = new SymbolOptions()
-                        .withLatLng(point)
-                        .withIconImage("user-marker");
-                userSymbol = mSymbolManager.create(symbolOptions);
-                return true;
-            }
+        mapboxMap.addOnMapLongClickListener(point -> {
+            vibrator.vibrate(100);
+            Snackbar.make(findViewById(android.R.id.content), "Custom Location Marked", Snackbar.LENGTH_INDEFINITE)
+                    .setAction("Dismiss", view -> deselectUserSymbol()).show();
+            deselectUserSymbol();
+            SymbolOptions symbolOptions = new SymbolOptions()
+                    .withLatLng(point)
+                    .withIconImage("user-marker")
+                    .withTextJustify("user-marker");
+            userSymbol = mSymbolManager.create(symbolOptions);
+            return true;
         });
+    }
 
-        // Remove user-marker on short click
-        mapboxMap.addOnMapClickListener(new MapboxMap.OnMapClickListener() {
-            @Override
-            public boolean onMapClick(@NonNull LatLng point) {
-                if(userSymbol != null) {
-                    mSymbolManager.delete(userSymbol);
-                }
-                return true;
-            }
-        });
+    private void deselectUserSymbol() {
+        if(userSymbol != null) {
+            mSymbolManager.delete(userSymbol);
+        }
     }
 
     private void addEvent(Event event) {
@@ -394,7 +364,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (requestCode == 100) {
             if (resultCode == RESULT_OK) {
                 filterOptions = (HashMap<String, Boolean>) data.getSerializableExtra("sortBy");
-                Log.i("DEBUG RESULT", filterOptions.toString());
                 filterSymbols();
                 repopulateSymbols();
             } else {

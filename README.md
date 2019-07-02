@@ -3,10 +3,11 @@ The idea came from HackTogether 2019 hosted by Freetail Hackers @University of T
 
 ### Features
 - Add a Point of Interest to the map and let everyone know
-- Add your event name, description and type to the marker
 - Supported by Google Firebase backend so everyone can see your event
 - Quick zoom to your current location
-- Ability to add event from current location
+- Ability to add event from current and selected location
+- Google Maps Integration for direction (Long press address)
+- Filter your desired events by type
 
 ### Dependencies
 - Mapbox map and its Annotation Plugin
@@ -19,4 +20,4 @@ The idea came from HackTogether 2019 hosted by Freetail Hackers @University of T
 - Set start and stop time for event and remove event once ended.
 
 ### Known Bugs
-- TBD
+- Handling multiple events at one location

@@ -16,29 +16,39 @@ public class Event implements Parcelable {
     private String eventDesc;
     private String uniqueID;
     private String eventType;
+    private long eventStartDate, eventEndDate;      // Event Start/End times are stored in UTC Epoch time
 
-    public Event(double lat, double lang, String eventName, String eventDesc, String eventType) {
+    // Constructors
+    public Event(double lat, double lang, String eventName, String eventDesc, String eventType, long eventStartDate, long eventEndDate) {
         this.eventLatLng = new LatLng(lat, lang);
         this.eventName = eventName;
         this.eventDesc = eventDesc;
         this.uniqueID = UUID.randomUUID().toString();
         this.eventType = eventType.toUpperCase();
+        this.eventStartDate = eventStartDate;
+        this.eventEndDate = eventEndDate;
     }
 
-    public Event(LatLng latLng, String eventName, String eventDesc, String eventType) {
+    public Event(LatLng latLng, String eventName, String eventDesc, String eventType, long eventStartDate, long eventEndDate) {
         this.eventLatLng = latLng;
         this.eventName = eventName;
         this.eventDesc = eventDesc;
         this.uniqueID = UUID.randomUUID().toString();
         this.eventType = eventType.toUpperCase();
+        this.eventStartDate = eventStartDate;
+        this.eventEndDate = eventEndDate;
     }
 
+
+    // Parcelable Config
     private Event(Parcel in) {
         this.eventLatLng = (LatLng) in.readValue(LatLng.class.getClassLoader());
         this.eventName = in.readString();
         this.eventDesc = in.readString();
         this.uniqueID = in.readString();
         this.eventType = in.readString().toUpperCase();
+        this.eventStartDate = in.readLong();
+        this.eventEndDate = in.readLong();
     }
 
     // Default constructor required for calls to DataSnapshot.getValue(Event.class)
@@ -65,6 +75,14 @@ public class Event implements Parcelable {
         this.eventType = eventType.toUpperCase();
     }
 
+    public void setEventStartDate(long eventStartDate) {
+        this.eventStartDate = eventStartDate;
+    }
+
+    public void setEventEndDate(long eventEndDate) {
+        this.eventEndDate = eventEndDate;
+    }
+
     // Getters
     public LatLng getEventLatLng() {
         return eventLatLng;
@@ -86,6 +104,14 @@ public class Event implements Parcelable {
         return eventType;
     }
 
+    public long getEventStartDate() {
+        return eventStartDate;
+    }
+
+    public long getEventEndDate() {
+        return eventEndDate;
+    }
+
     // Parcelable Implementation
     @Override
     public int describeContents() {
@@ -99,6 +125,8 @@ public class Event implements Parcelable {
         parcel.writeString(eventDesc);
         parcel.writeString(uniqueID);
         parcel.writeString(eventType);
+        parcel.writeLong(eventStartDate);
+        parcel.writeLong(eventEndDate);
     }
 
     // Parcelables CREATOR that implements these two methods

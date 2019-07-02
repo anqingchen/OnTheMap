@@ -1,7 +1,5 @@
 package com.anqingchen.onthemap;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
@@ -14,14 +12,19 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
+import com.wdullaer.materialdatetimepicker.time.TimePickerDialog;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 
@@ -31,6 +34,10 @@ public class EventActivity extends AppCompatActivity {
     Button doBtn;
     private DatabaseReference mDatabase;
     Spinner typeSpinner;
+    DatePickerDialog startDpd, endDpd;
+    TimePickerDialog startTpd, endTpd;
+    Calendar startDate, endDate;
+    TextView startDateText, startTimeText, endDateText, endTimeText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,49 +47,115 @@ public class EventActivity extends AppCompatActivity {
         desc = findViewById(R.id.editText2);
         addr = findViewById(R.id.editText7);
         doBtn = findViewById(R.id.button);
+        startDateText = findViewById(R.id.textView7);
+        startTimeText = findViewById(R.id.textView8);
+        endDateText = findViewById(R.id.textView9);
+        endTimeText = findViewById(R.id.textView10);
+
+        // Initialize Firebase Database
         mDatabase = FirebaseDatabase.getInstance().getReference();
 
+        // Configure Date/Time displays
+        String datePattern = "MMMM dd,yyyy";
+        String timePattern = "KK:mm a";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
+        SimpleDateFormat simpleTimeFormat = new SimpleDateFormat(timePattern);
+
+        // Initialize Spinner for picking activity types
         typeSpinner = findViewById(R.id.spinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.type_options_array, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         typeSpinner.setAdapter(adapter);
 
+        // Get user's current location from intent
         final Location cLocation = getIntent().getParcelableExtra("EXTRA_LOC");
 
+        // Timestamp for reference
+        Calendar now = Calendar.getInstance();
+
+        startDate = Calendar.getInstance();
+        endDate = Calendar.getInstance();
+
+        // Configure Date/Time Picker Dialogs
+        startDpd = DatePickerDialog.newInstance(
+                (view, year, monthOfYear, dayOfMonth) -> {
+                    startDate.set(year, monthOfYear, dayOfMonth);
+                    startDateText.setText(simpleDateFormat.format(new Date(startDate.getTimeInMillis())));
+                },
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH)
+        );
+
+        endDpd = DatePickerDialog.newInstance(
+                (view, year, monthOfYear, dayOfMonth) -> {
+                    endDate.set(year, monthOfYear, dayOfMonth);
+                    endDateText.setText(simpleDateFormat.format(new Date(endDate.getTimeInMillis())));
+                },
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH)
+        );
+
+        startTpd = TimePickerDialog.newInstance(
+                (view, hourOfDay, minute, second) -> {
+                    startDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    startDate.set(Calendar.MINUTE, minute);
+                    startDate.set(Calendar.SECOND, second);
+                    startTimeText.setText(simpleTimeFormat.format(new Date(startDate.getTimeInMillis())));
+                },
+                now.get(Calendar.HOUR_OF_DAY),
+                now.get(Calendar.MINUTE),
+                true
+        );
+
+        endTpd = TimePickerDialog.newInstance(
+                (view, hourOfDay, minute, second) -> {
+                    endDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    endDate.set(Calendar.MINUTE, minute);
+                    endDate.set(Calendar.SECOND, second);
+                    endTimeText.setText(simpleTimeFormat.format(new Date(endDate.getTimeInMillis())));
+                },
+                now.get(Calendar.HOUR_OF_DAY),
+                now.get(Calendar.MINUTE),
+                true
+        );
+
+
+
         // OnClickListener for button to submit event add request
-        doBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Check for form completion
-                if(name.getText().toString().isEmpty() || desc.getText().toString().isEmpty() || addr.getText().toString().isEmpty()) {
-                    Toast.makeText(EventActivity.this, "NOT ENOUGH INFO", Toast.LENGTH_SHORT).show();
+        doBtn.setOnClickListener(view -> {
+            // Check for form completion
+            if(name.getText().toString().isEmpty() || desc.getText().toString().isEmpty() || addr.getText().toString().isEmpty() || startTimeText.getText().toString().equals("Start Time")
+            || startDateText.getText().toString().equals("Start Date") || endTimeText.getText().toString().equals("End Time") || endDateText.getText().toString().equals("End Date")) {
+                Toast.makeText(EventActivity.this, "NOT ENOUGH INFO", Toast.LENGTH_SHORT).show();
+            } else if(startDate.after(endDate)) {   // Check if start time is configured after end time!
+               Toast.makeText(EventActivity.this, "Start Date/Time is After the End Time, Please Check Your Inputs", Toast.LENGTH_LONG).show();
+            } else {    // store event onto Firebase
+                Event newEvent;
+                LatLng tempLatLng;
+                String address = addr.getText().toString();
+                String eventType = typeSpinner.getSelectedItem().toString();
+                if(address.equals("Current Location")) {
+                    tempLatLng = new LatLng(cLocation.getLatitude(), cLocation.getLongitude());
                 } else {
-                    Event newEvent;
-                    String address = addr.getText().toString();
-                    String eventType = typeSpinner.getSelectedItem().toString();
-                    if(!address.equals("Current Location")) {
-                        LatLng tempLatLng = getLocationFromAddress(getApplicationContext(), address);
-                        newEvent = new Event(tempLatLng, name.getText().toString(), desc.getText().toString(), eventType);
-                    } else {
-                        newEvent = new Event(cLocation.getLatitude(), cLocation.getLongitude(), name.getText().toString(), desc.getText().toString(), eventType);
-                    }
-                    writeNewEvent(newEvent);
+                    tempLatLng = getLocationFromAddress(getApplicationContext(), address);
                 }
+                newEvent = new Event(tempLatLng, name.getText().toString(), desc.getText().toString(),
+                        eventType, startDate.getTimeInMillis(), endDate.getTimeInMillis());
+                writeNewEvent(newEvent);
             }
         });
     }
 
     // Update Firebase Realtime with newEvent
     private void writeNewEvent(final Event newEvent) {
-        mDatabase.child("events").child(newEvent.getUniqueID()).setValue(newEvent, new DatabaseReference.CompletionListener() {
-            @Override
-            public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
-                if(databaseError != null) {
-                    Toast.makeText(EventActivity.this, "Your Event Failed To Be Added, Error Msg: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(EventActivity.this, "Your Event " + newEvent.getEventName() + " Has Been Successfully Added", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
+        mDatabase.child("events").child(newEvent.getUniqueID()).setValue(newEvent, (databaseError, databaseReference) -> {
+            if(databaseError != null) {
+                Toast.makeText(EventActivity.this, "Your Event Failed To Be Added, Error Msg: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(EventActivity.this, "Your Event " + newEvent.getEventName() + " Has Been Successfully Added", Toast.LENGTH_SHORT).show();
+                finish();
             }
         });
     }
@@ -104,5 +177,22 @@ public class EventActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
         return p1;
+    }
+
+    // OnClick functions for Date/Time Picker TextViews
+    public void startDatePicker(View v) {
+        startDpd.show(getSupportFragmentManager(), "Start Date");
+    }
+
+    public void startTimePicker(View v) {
+        startTpd.show(getSupportFragmentManager(), "Start Time");
+    }
+
+    public void endDatePicker(View v) {
+        endDpd.show(getSupportFragmentManager(), "End Date");
+    }
+
+    public void endTimePicker(View v) {
+        endTpd.show(getSupportFragmentManager(), "End Time");
     }
 }

@@ -17,6 +17,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 repositories {
@@ -37,6 +41,7 @@ dependencies {
     implementation 'com.mapbox.mapboxsdk:mapbox-android-sdk:8.1.0'
     implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-annotation-v8:0.7.0'
     implementation 'com.google.android.material:material:1.0.0'
+    implementation 'com.wdullaer:materialdatetimepicker:4.2.1'
 }
 
 apply plugin: 'com.google.gms.google-services'
