@@ -9,31 +9,25 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.Registry;
-import com.bumptech.glide.annotation.GlideModule;
-import com.bumptech.glide.module.AppGlideModule;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.os.Vibrator;
-import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+
+import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade;
 
 public class InfoActivity extends AppCompatActivity {
 
@@ -77,9 +71,14 @@ public class InfoActivity extends AppCompatActivity {
         final FirebaseStorage firebaseStorage = FirebaseStorage.getInstance();
         final StorageReference storageReference = firebaseStorage.getReference();
         final StorageReference pathReference = storageReference.child("images").child(event.getUniqueID());
-        pathReference.getDownloadUrl().addOnSuccessListener(uri -> Glide.with(InfoActivity.this)
-                .load(uri)
-                .into(eventPicture)).addOnFailureListener(e -> Log.i("DEBUG", e.getMessage()));
+        pathReference.getDownloadUrl().addOnSuccessListener(uri -> {
+            Glide.with(InfoActivity.this)
+                    .load(uri)
+                    .transition(withCrossFade(300))
+                    .into(eventPicture);
+        }).addOnFailureListener(e -> {
+            eventPicture.setImageResource(R.drawable.my_image);
+        });
 
         // Get Directions to Address
         address.setOnLongClickListener(
@@ -190,8 +189,7 @@ public class InfoActivity extends AppCompatActivity {
     }
 
     public String getSharableString(Event event) {
-        String mString = "Let's go to " + event.getEventName() + ". It's between " + startTime.getText().toString() + " and " +
+        return "Let's go to " + event.getEventName() + ". It's between " + startTime.getText().toString() + " and " +
                 endTime.getText().toString() + " at " + address.getText().toString() + ".";
-        return mString;
     }
 }

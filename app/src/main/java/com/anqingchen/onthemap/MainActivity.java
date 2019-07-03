@@ -117,12 +117,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
                 Event event = dataSnapshot.getValue(Event.class);
-                if(!removeEvent(event.getUniqueID())) {
-                    Log.i("DEBUG", "Event " + event.getEventName() + " with event ID: "
-                    + event.getUniqueID() + " Does NOT exist");
+                if(event != null) {
+                    if(!removeEvent(event.getUniqueID())) {
+                        Log.i("DEBUG", "Event " + event.getEventName() + " with event ID: "
+                                + event.getUniqueID() + " Does NOT exist");
+                    }
+                    filterSymbols();
+                    repopulateSymbols();
                 }
-                filterSymbols();
-                repopulateSymbols();
             }
 
             @Override
@@ -332,16 +334,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @SuppressWarnings({"MissingPermission"})
     private Location getLastKnownLocation() {
         mLocationManager = (LocationManager)getApplicationContext().getSystemService(LOCATION_SERVICE);
-        List<String> providers = mLocationManager.getProviders(true);
         Location bestLocation = null;
-        for (String provider : providers) {
-            Location l = mLocationManager.getLastKnownLocation(provider);
-            if (l == null) {
-                continue;
-            }
-            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
-                // Found best last known location: %s", l);
-                bestLocation = l;
+        if(mLocationManager != null) {
+            List<String> providers = mLocationManager.getProviders(true);
+            for (String provider : providers) {
+                Location l = mLocationManager.getLastKnownLocation(provider);
+                if (l == null) {
+                    continue;
+                }
+                if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                    // Found best last known location: %s", l);
+                    bestLocation = l;
+                }
             }
         }
         return bestLocation;

@@ -41,16 +41,13 @@ public class FilterActivity extends AppCompatActivity {
 //        }
 
         Button button = findViewById(R.id.button3);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                filterOptions.put("FOOD", foodSwitch.isChecked());
-                filterOptions.put("ENTERTAINMENT", entertainmentSwitch.isChecked());
-                Intent intent = new Intent();
-                intent.putExtra("sortBy", filterOptions);
-                setResult(Activity.RESULT_OK, intent);
-                finish();
-            }
+        button.setOnClickListener(view -> {
+            filterOptions.put("FOOD", foodSwitch.isChecked());
+            filterOptions.put("ENTERTAINMENT", entertainmentSwitch.isChecked());
+            Intent intent = new Intent();
+            intent.putExtra("sortBy", filterOptions);
+            setResult(Activity.RESULT_OK, intent);
+            finish();
         });
     }
 
