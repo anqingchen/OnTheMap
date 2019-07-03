@@ -287,6 +287,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapView.onLowMemory();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        mapView.onResume();
+        repopulateSymbols();
+    }
+
     @SuppressWarnings({"MissingPermission"})
     private void enableLocationComponent(@NonNull Style loadedMapStyle) {
         LocationComponent locationComponent;

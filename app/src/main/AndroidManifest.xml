@@ -23,7 +23,13 @@
         <activity
             android:name=".FilterActivity"
             android:theme="@style/Theme.Filter" />
-        <activity android:name=".EventActivity" />
+        <activity
+            android:name=".EventActivity"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

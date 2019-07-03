@@ -1,8 +1,10 @@
 package com.anqingchen.onthemap;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -43,7 +45,7 @@ public class EventActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event);
-        name = findViewById(R.id.editText);
+        name = findViewById(R.id.eventNameText);
         desc = findViewById(R.id.editText2);
         addr = findViewById(R.id.editText7);
         doBtn = findViewById(R.id.button);
@@ -51,6 +53,12 @@ public class EventActivity extends AppCompatActivity {
         startTimeText = findViewById(R.id.textView8);
         endDateText = findViewById(R.id.textView9);
         endTimeText = findViewById(R.id.textView10);
+
+        Toolbar toolbar = findViewById(R.id.eventToolBar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.getNavigationIcon().setColorFilter(getColor(android.R.color.black), PorterDuff.Mode.SRC_ATOP);
 
         // Initialize Firebase Database
         mDatabase = FirebaseDatabase.getInstance().getReference();

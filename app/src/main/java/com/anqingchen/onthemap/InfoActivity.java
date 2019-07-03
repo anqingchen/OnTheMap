@@ -2,16 +2,19 @@ package com.anqingchen.onthemap;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.PorterDuff;
 import android.location.Address;
 import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Bundle;
 
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.ShareActionProvider;
 import androidx.appcompat.widget.Toolbar;
 
 import android.os.Vibrator;
@@ -36,6 +39,7 @@ public class InfoActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.getNavigationIcon().setColorFilter(getColor(android.R.color.black), PorterDuff.Mode.SRC_ATOP);
 
         month = findViewById(R.id.monthText);
         date = findViewById(R.id.dateText);
@@ -67,7 +71,7 @@ public class InfoActivity extends AppCompatActivity {
         );
 
         // Configure Date/Time displays
-        String datePattern = "E,  MMM  dd 3";
+        String datePattern = "E,  MMM dd";
         String timePattern = "HH:mm  z";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
         SimpleDateFormat simpleTimeFormat = new SimpleDateFormat(timePattern);
@@ -79,8 +83,15 @@ public class InfoActivity extends AppCompatActivity {
         endTime.setText(tempText);
 
         FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(view -> Snackbar.make(view, "Feature WIP", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show());
+        fab.setOnClickListener(view -> {
+                Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+                sharingIntent.setType("text/plain");
+                String shareBody = getSharableString(event);
+                String shareSub = event.getEventName();
+                sharingIntent.putExtra(Intent.EXTRA_SUBJECT, shareSub);
+                sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+                startActivity(Intent.createChooser(sharingIntent, "Share using"));
+        });
     }
 
     public String getAddressFromLocation(Context context, LatLng latLng) {
@@ -150,5 +161,11 @@ public class InfoActivity extends AppCompatActivity {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
         return calendar.get(Calendar.DAY_OF_MONTH);
+    }
+
+    public String getSharableString(Event event) {
+        String mString = "Let's go to " + event.getEventName() + ". It's between " + startTime.getText().toString() + " and " +
+                endTime.getText().toString() + " at " + address.getText().toString() + ".";
+        return mString;
     }
 }
