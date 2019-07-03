@@ -23,18 +23,21 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <View
+    <ImageButton
         android:id="@+id/newImage"
         android:layout_width="match_parent"
         android:layout_height="256dp"
-        android:layout_below="@id/eventAppBar"/>
-
+        android:layout_below="@id/eventAppBar"
+        android:src="@drawable/add_2935429_1280"
+        android:scaleType="centerCrop"
+        android:background="@null"/>
 
     <EditText
         android:id="@+id/eventNameText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/newImage"
+        android:layout_marginTop="10dp"
         android:layout_marginStart="30dp"
         android:layout_marginEnd="30dp"
         android:textSize="27sp"

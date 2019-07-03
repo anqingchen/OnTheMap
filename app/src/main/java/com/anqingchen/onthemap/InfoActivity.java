@@ -8,19 +8,28 @@ import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Bundle;
 
-import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.Registry;
+import com.bumptech.glide.annotation.GlideModule;
+import com.bumptech.glide.module.AppGlideModule;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.ShareActionProvider;
 import androidx.appcompat.widget.Toolbar;
 
 import android.os.Vibrator;
+import android.util.Log;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -30,6 +39,7 @@ public class InfoActivity extends AppCompatActivity {
 
     Event event;
     TextView month, date, name, address, startTime, endTime, desc;
+    ImageView eventPicture;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +51,7 @@ public class InfoActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.getNavigationIcon().setColorFilter(getColor(android.R.color.black), PorterDuff.Mode.SRC_ATOP);
 
+        // Allocating Views
         month = findViewById(R.id.monthText);
         date = findViewById(R.id.dateText);
         name = findViewById(R.id.nameText);
@@ -48,9 +59,12 @@ public class InfoActivity extends AppCompatActivity {
         startTime = findViewById(R.id.startTimeText);
         endTime = findViewById(R.id.endTimeText);
         desc = findViewById(R.id.descText);
+        eventPicture = findViewById(R.id.eventPicture);
 
-        final Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+        // System Vibrator
+        final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
+        // Grab event passed
         event = getIntent().getParcelableExtra("EXTRA_EVENT");
 
         month.setText(getUTCtoMonth(event.getEventStartDate()));
@@ -59,12 +73,23 @@ public class InfoActivity extends AppCompatActivity {
         desc.setText(event.getEventDesc());
         address.setText(getAddressFromLocation(InfoActivity.this, event.getEventLatLng()));
 
+        // Pull event image off Firebase
+        final FirebaseStorage firebaseStorage = FirebaseStorage.getInstance();
+        final StorageReference storageReference = firebaseStorage.getReference();
+        final StorageReference pathReference = storageReference.child("images").child(event.getUniqueID());
+        pathReference.getDownloadUrl().addOnSuccessListener(uri -> Glide.with(InfoActivity.this)
+                .load(uri)
+                .into(eventPicture)).addOnFailureListener(e -> Log.i("DEBUG", e.getMessage()));
+
+        // Get Directions to Address
         address.setOnLongClickListener(
                 view -> {
                     Intent intent = new Intent(Intent.ACTION_VIEW,
                             Uri.parse("https://www.google.com/maps/dir/?api=1&destination=" + event.getEventLatLng().getLatitude() + "," +
                                     event.getEventLatLng().getLongitude()));
-                    vibrator.vibrate(100);
+                    if (vibrator != null) {
+                        vibrator.vibrate(100);
+                    }
                     startActivity(intent);
                     return false;
                 }
@@ -76,21 +101,22 @@ public class InfoActivity extends AppCompatActivity {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
         SimpleDateFormat simpleTimeFormat = new SimpleDateFormat(timePattern);
         Date tempDate = new Date(event.getEventStartDate());
-        String tempText = simpleDateFormat.format(tempDate) + " at  " + simpleTimeFormat.format(tempDate);
+        String tempText = simpleDateFormat.format(tempDate) + " at " + simpleTimeFormat.format(tempDate);
         startTime.setText(tempText);
         tempDate = new Date(event.getEventEndDate());
         tempText = simpleDateFormat.format(tempDate) + " at " + simpleTimeFormat.format(tempDate);
         endTime.setText(tempText);
 
+        // Share the Event
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
-                Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-                sharingIntent.setType("text/plain");
-                String shareBody = getSharableString(event);
-                String shareSub = event.getEventName();
-                sharingIntent.putExtra(Intent.EXTRA_SUBJECT, shareSub);
-                sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
-                startActivity(Intent.createChooser(sharingIntent, "Share using"));
+            Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+            sharingIntent.setType("text/plain");
+            String shareBody = getSharableString(event);
+            String shareSub = event.getEventName();
+            sharingIntent.putExtra(Intent.EXTRA_SUBJECT, shareSub);
+            sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+            startActivity(Intent.createChooser(sharingIntent, "Share using"));
         });
     }
 
@@ -102,7 +128,7 @@ public class InfoActivity extends AppCompatActivity {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        if(address == null) {
+        if (address == null) {
             return null;
         } else {
             return address.get(0).getAddressLine(0);
@@ -115,7 +141,7 @@ public class InfoActivity extends AppCompatActivity {
         calendar.setTime(date);
         int monthNum = calendar.get(Calendar.MONTH) + 1;
         String month = "ERR";
-        switch(monthNum) {
+        switch (monthNum) {
             case 1:
                 month = "JAN";
                 break;

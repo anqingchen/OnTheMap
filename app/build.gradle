@@ -25,6 +25,7 @@ android {
 
 repositories {
     mavenCentral()
+    google()
 }
 
 dependencies {
@@ -35,6 +36,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-core:17.0.0'
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.google.firebase:firebase-database:18.0.0'
+    implementation 'com.google.firebase:firebase-storage:18.0.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
@@ -42,6 +44,8 @@ dependencies {
     implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-annotation-v8:0.7.0'
     implementation 'com.google.android.material:material:1.0.0'
     implementation 'com.wdullaer:materialdatetimepicker:4.2.1'
+    implementation 'com.github.bumptech.glide:glide:4.9.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.9.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

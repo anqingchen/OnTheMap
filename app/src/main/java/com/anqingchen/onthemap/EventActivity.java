@@ -4,26 +4,36 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 import com.wdullaer.materialdatetimepicker.time.TimePickerDialog;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -40,6 +50,13 @@ public class EventActivity extends AppCompatActivity {
     TimePickerDialog startTpd, endTpd;
     Calendar startDate, endDate;
     TextView startDateText, startTimeText, endDateText, endTimeText;
+    ImageButton newImage;
+    Bitmap bitmap;
+    FirebaseStorage firebaseStorage;
+    StorageReference storageReference;
+    Uri filePath;
+
+    public static final int PICK_IMAGE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +70,9 @@ public class EventActivity extends AppCompatActivity {
         startTimeText = findViewById(R.id.textView8);
         endDateText = findViewById(R.id.textView9);
         endTimeText = findViewById(R.id.textView10);
+        newImage = findViewById(R.id.newImage);
 
+        // Initialize top tool bar
         Toolbar toolbar = findViewById(R.id.eventToolBar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -62,6 +81,20 @@ public class EventActivity extends AppCompatActivity {
 
         // Initialize Firebase Database
         mDatabase = FirebaseDatabase.getInstance().getReference();
+
+        // Initialize Firebase Storage
+        firebaseStorage = FirebaseStorage.getInstance();
+        storageReference = firebaseStorage.getReference();
+
+        newImage.setOnClickListener(view -> {
+            Intent getIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            getIntent.setType("image/*");
+            Intent pickIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            pickIntent.setType("image/*");
+            Intent chooserIntent = Intent.createChooser(getIntent, "Select Image");
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {pickIntent});
+            startActivityForResult(chooserIntent, PICK_IMAGE);
+        });
 
         // Configure Date/Time displays
         String datePattern = "MMMM dd,yyyy";
@@ -80,7 +113,6 @@ public class EventActivity extends AppCompatActivity {
 
         // Timestamp for reference
         Calendar now = Calendar.getInstance();
-
         startDate = Calendar.getInstance();
         endDate = Calendar.getInstance();
 
@@ -151,6 +183,10 @@ public class EventActivity extends AppCompatActivity {
                 }
                 newEvent = new Event(tempLatLng, name.getText().toString(), desc.getText().toString(),
                         eventType, startDate.getTimeInMillis(), endDate.getTimeInMillis());
+                if(filePath != null) {
+                    // add bitmap to firebase here!
+                    uploadImage(newEvent);
+                }
                 writeNewEvent(newEvent);
             }
         });
@@ -202,5 +238,36 @@ public class EventActivity extends AppCompatActivity {
 
     public void endTimePicker(View v) {
         endTpd.show(getSupportFragmentManager(), "End Time");
+    }
+
+    // Get image back from user selection interface
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Get result filterOptions HashMap back
+        if (requestCode == PICK_IMAGE) {
+            if (resultCode == RESULT_OK) {
+                try{
+                    filePath = data.getData();
+                    InputStream inputStream = EventActivity.this.getContentResolver().openInputStream(data.getData());
+                    bitmap = BitmapFactory.decodeStream(inputStream);
+                    newImage.setImageBitmap(bitmap);
+                } catch (FileNotFoundException e) {
+                    Toast.makeText(EventActivity.this, "Image Does Not Exist", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(EventActivity.this, "Image Selection Cancelled", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void uploadImage(Event event) {
+        if(bitmap != null) {
+            StorageReference ref = storageReference.child("images/" + event.getUniqueID());
+            ref.putFile(filePath).addOnSuccessListener(taskSnapshot -> {
+                Toast.makeText(EventActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
+            }).addOnFailureListener(e -> {
+                Log.i("DEBUG UPLOAD", e.getMessage());
+            });
+        }
     }
 }
